@@ -5,6 +5,6 @@ This repository contains all the work done as part of the course _72.74 - Visual
 ### Makeover Monday
 A set of challenges that consist of visualizing the datasets that are posted every week over at <https://www.makeovermonday.co.uk/data/> 
 - [Week 31](https://lucas-sg.github.io/infovis/Makeover%20Monday/Week%2031/makeovermonday-w31.html)
-- Week 32
+- [Week 32](https://lucas-sg.github.io/infovis/Makeover%20Monday/Week%2032/makeovermonday-w32.html)
 - Week 33
 - Week 34
