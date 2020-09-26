@@ -5,8 +5,16 @@ import json
 from bs4 import BeautifulSoup
 
 
-def get_score(match):
-    return match.find('td', class_="csgo_scoreboard_score").text
+def get_score(match, all_stats):
+    score = match.find('td', class_="csgo_scoreboard_score").text
+    SCORE_DIVIDER = " : "
+    [x, _, y] = score.partition(SCORE_DIVIDER)
+
+    if I_AM in all_stats["Winners"]:
+        return score if int(x) >= int(y) else y + SCORE_DIVIDER + x
+    else:
+        [x, _, y] = score.partition(SCORE_DIVIDER)
+        return score if int(x) < int(y) else y + SCORE_DIVIDER + x
 
 
 def get_stat_labels():
@@ -80,25 +88,51 @@ def get_metadata(match):
     return [tag.text for tag in parent_tag.findAll('td', class_=None)][:4]
 
 
+def count_friends(match):
+    team = match["Winners"] if I_AM in match["Winners"] else match["Losers"]
+
+    return len(set(team) & set(FRIENDS))
+
+
 def get_match_stats(match):
     stats = {}
+    all_players_stats = get_all_stats(match)
     [map_, date, _, duration] = get_metadata(match)
     stats['Map'] = map_
     stats['Date'] = date
     stats['Duration'] = duration.partition("Match Duration: ")[2]
-    stats['Score'] = get_score(match)
-    stats.update(get_all_stats(match))
+    stats['Friends'] = count_friends(all_players_stats)
+    stats['Score'] = get_score(match, all_players_stats)
+    stats.update(all_players_stats)
 
     return stats
 
 
+def my_team_only(matches):
+    for match in matches:
+        if I_AM in match["Winners"]:
+            match["Result"] = "won"
+            match["Team"] = match["Winners"]
+        else:
+            match["Result"] = "lost"
+            match["Team"] = match["Losers"]
+
+        del match["Winners"]
+        del match["Losers"]
+
+    return matches
+
+
+I_AM = "Tablon James"
+FRIENDS = json.load(open("friends.json", "r"))
 csgo_file = open("./csgo_matches.html")
 soup = BeautifulSoup(csgo_file, "html.parser")
 labels = get_stat_labels()
 matches = soup.findAll('table', class_="csgo_scoreboard_inner_right")
+stats = [get_match_stats(match) for match in matches]
 
-with open("matches.json", "w") as outfile:
-    json.dump([get_match_stats(match) for match in matches], outfile)
+with open("csgo_matches.json", "w") as outfile:
+    json.dump(my_team_only(stats), outfile)
 
-# matches = soup.findAll('table', class_="csgo_scoreboard_inner_right")
-# [print(get_metadata(match)) for match in matches]
+with open("csgo_matches_including_both_teams.json", "w") as outfile:
+    json.dump(stats, outfile)
