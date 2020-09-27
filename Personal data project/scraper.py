@@ -43,9 +43,9 @@ def parse_mvp(stats):
     star = '\u2605'
 
     if mvp[:1] == star:
-        return mvp[1:] if mvp[1:] else '1'
+        stats[labels.index('MVP')] = mvp[1:] if mvp[1:] else '1'
     else:
-        return '0'
+        stats[labels.index('MVP')] = '0'
 
 
 def parse_hsp(stats):
@@ -105,7 +105,7 @@ def get_match_stats(match):
     stats = {}
     all_players_stats = get_all_stats(match)
     [map_, date, _, duration] = get_metadata(match)
-    stats['Map'] = map_
+    stats['Map'] = map_.partition('Competitive ')[2]
     stats['Date'] = date
     stats['Duration'] = duration.partition('Match Duration: ')[2]
     stats['Friends'] = count_friends(all_players_stats)
@@ -132,7 +132,7 @@ def my_team_only(matches):
 
 I_AM = 'Tablon James'
 FRIENDS = json.load(open('friends.json', 'r'))
-csgo_file = open('./csgo_matches.html')
+csgo_file = open('./csgo_matches.html', 'r')
 soup = BeautifulSoup(csgo_file, 'html.parser')
 labels = get_stat_labels()
 matches = soup.findAll('table', class_='csgo_scoreboard_inner_right')
