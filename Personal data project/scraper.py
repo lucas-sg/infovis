@@ -3,6 +3,7 @@ import urllib.request
 import time
 import json
 from bs4 import BeautifulSoup
+from csv_builder import build_csv
 
 
 def get_score(match, all_stats):
@@ -138,10 +139,10 @@ labels = get_stat_labels()
 matches = soup.findAll('table', class_='csgo_scoreboard_inner_right')
 csgo_stats = [get_match_stats(match) for match in matches]
 
+with open('csgo_matches_including_both_teams.json', 'w') as outfile:
+    json.dump(csgo_stats, outfile)
+
 with open('csgo_matches.json', 'w') as outfile:
     json.dump(my_team_only(csgo_stats), outfile)
 
-time.sleep(5)
-
-with open('csgo_matches_including_both_teams.json', 'w') as outfile:
-    json.dump(csgo_stats, outfile)
+build_csv(csgo_stats)
