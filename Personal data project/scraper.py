@@ -1,9 +1,7 @@
-import requests
-import urllib.request
 import time
 import json
 from bs4 import BeautifulSoup
-from csv_builder import build_csv
+from csv_builder import build_csv, build_csv_only_me
 
 
 def get_score(match, all_stats):
@@ -35,6 +33,8 @@ def get_label_name(label):
         return 'Deaths'
     elif label == '★':
         return 'MVP'
+    elif label == 'Score':
+        return 'Player score'
     else:
         return label
 
@@ -116,13 +116,25 @@ def get_match_stats(match):
     return stats
 
 
-def my_team_only(matches):
+def i_got_disconnected(match):
+    my = match['Winners'][I_AM] if I_AM in match['Winners'] else match['Losers'][I_AM]
+
+    return my['Kills'] == 0 and my['Assists'] == 0 and my['Deaths'] == 0
+
+
+def my_team_only(original_matches):
+    matches = original_matches.copy()
+
     for match in matches:
+        if i_got_disconnected(match):
+            del matches[match]
+            continue
+
         if I_AM in match['Winners']:
             match['Result'] = 'won'
             match['Team'] = match['Winners']
         else:
-            match['Result'] = 'lost'
+            match['Result'] = 'lost' if match['Score'] != '15 : 15' else 'won'
             match['Team'] = match['Losers']
 
         del match['Winners']
@@ -131,18 +143,25 @@ def my_team_only(matches):
     return matches
 
 
+def my_stats_only(original_matches):
+    matches = original_matches.copy()
+
+    for match in matches:
+        for player in match['Team']:
+            if I_AM == player:
+                match.update(match['Team'][player])
+                del match['Team']
+
+    return matches
+
+
+def get_csgo_stats():
+    return [get_match_stats(match) for match in matches]
+
+
 I_AM = 'Tablon James'
-FRIENDS = json.load(open('friends.json', 'r'))
-csgo_file = open('./csgo_matches.html', 'r')
+FRIENDS = json.load(open('steam_friends.json', 'r'))
+csgo_file = open('./data/csgo_steam_stats.html', 'r')
 soup = BeautifulSoup(csgo_file, 'html.parser')
 labels = get_stat_labels()
 matches = soup.findAll('table', class_='csgo_scoreboard_inner_right')
-csgo_stats = [get_match_stats(match) for match in matches]
-
-with open('csgo_matches_including_both_teams.json', 'w') as outfile:
-    json.dump(csgo_stats, outfile)
-
-with open('csgo_matches.json', 'w') as outfile:
-    json.dump(my_team_only(csgo_stats), outfile)
-
-build_csv(csgo_stats)

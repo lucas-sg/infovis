@@ -13,5 +13,5 @@ A set of challenges that consist of visualizing the datasets that are posted eve
 
 ## Personal data project
 
-A visualization project to show some personal data. In my case, some [statistics of my CS:GO matches](https://lucas-sg.github.io/infovis/Personal%20data%20project/csgo_stats.png) between May and September 2020.
-You can find an interesting correlation graph between matches with friends and their result [here](https://lucas-sg.github.io/infovis/Personal%20data%20project/flourish_viz.html).
+A visualization project to show some personal data. In my case, some [statistics of my CS:GO matches](https://lucas-sg.github.io/infovis/Personal%20data%20project/viz/csgo_stats.png) between May and September 2020.
+You can find an interesting correlation graph between matches with friends and their result [here](https://lucas-sg.github.io/infovis/Personal%20data%20project/viz/flourish_viz.html).
