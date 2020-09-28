@@ -1,4 +1,4 @@
-import time
+from datetime import datetime, timedelta
 import json
 from bs4 import BeautifulSoup
 from csv_builder import build_csv, build_csv_only_me
@@ -102,12 +102,19 @@ def count_friends(match):
     return len(set(team) & set(FRIENDS))
 
 
+def format_date(date):
+    extracted_datetime = datetime.strptime(date, '%Y-%m-%d %H:%M:%S GMT')
+    arg_datetime = extracted_datetime - timedelta(hours=3)
+    
+    return arg_datetime.strftime('%d/%m %H:%M')
+
+
 def get_match_stats(match):
     stats = {}
     all_players_stats = get_all_stats(match)
     [map_, date, _, duration] = get_metadata(match)
     stats['Map'] = map_.partition('Competitive ')[2]
-    stats['Date'] = date
+    stats['Date'] = format_date(date)
     stats['Duration'] = duration.partition('Match Duration: ')[2]
     stats['Friends'] = count_friends(all_players_stats)
     stats['Score'] = get_score(match, all_players_stats)

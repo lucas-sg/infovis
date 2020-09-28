@@ -1,5 +1,7 @@
 import csv
 import json
+from datetime import datetime
+import calendar
 
 
 def build_csv(matches):
@@ -40,3 +42,21 @@ def write_title_row(csv_file):
     csv_writer.writerow(['Map', 'Date', 'Duration', 'Friends', 'Score', 'Result',
                             'Player', 'Ping', 'Kills', 'Assists', 'Deaths', 'MVP', 'HSP', 'Player score'])
     return csv_writer
+
+
+def build_csv_matches_per_weekday(matches):
+    weekdays = [0] * 7   # Monday=0, Tuesday=1, ..., Sunday=6
+
+    with open('./data/csgo_matches_per_weekday.csv', 'w') as csv_file:
+        csv_writer = csv.writer(csv_file)
+        csv_writer.writerow(['Weekday', 'Matches'])
+                
+        for match in matches:
+            day_number = get_day_number(match['Date'])
+            weekdays[day_number] += 1
+
+        for day_num in range(len(weekdays)):
+            csv_writer.writerow([calendar.day_name[day_num], weekdays[day_num]])
+
+def get_day_number(date):
+    return datetime.strptime(date, '%d/%m %H:%M').replace(year=2020).weekday()
