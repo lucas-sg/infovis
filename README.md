@@ -8,3 +8,6 @@ A set of challenges that consist of visualizing the datasets that are posted eve
 - [Week 32](https://lucas-sg.github.io/infovis/Makeover%20Monday/Week%2032/makeovermonday-w32.html)
 - Week 33
 - Week 34
+
+### Personal data project
+A visualization project to show some personal data. In my case, some statistics of my CS:GO matches between May and September 2020.
