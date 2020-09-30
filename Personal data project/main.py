@@ -1,7 +1,7 @@
 import json
 from datetime import datetime, timedelta
 from scraper import my_team_only, my_stats_only, get_csgo_stats
-from csv_builder import build_csv, build_csv_only_me, build_csv_matches_per_weekday
+from csv_builder import build_csv, build_csv_only_me, build_csv_matches_per_weekday, build_csv_net_wins_per_map_timeline, build_csv_matches_per_map_timeline
 
 
 csgo_stats = get_csgo_stats()
@@ -23,6 +23,5 @@ with open('./data/csgo_matches_only_me.json', 'w') as outfile:
 
 build_csv_only_me(my_stats)
 build_csv_matches_per_weekday(my_stats)
-
-# for match in my_stats[:2]:
-    # print(datetime.strptime(match['Date'], '%Y-%m-%d %H:%M:%S GMT') - timedelta(hours=3))
+build_csv_net_wins_per_map_timeline(my_stats)
+build_csv_matches_per_map_timeline(my_stats)

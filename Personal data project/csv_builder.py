@@ -1,13 +1,14 @@
 import csv
 import json
-from datetime import datetime
+from datetime import datetime, timedelta
 import calendar
+import numpy as np
 
 
 def build_csv(matches):
     with open('./data/csgo_matches.csv', 'w') as csv_file:
         csv_writer = write_title_row(csv_file)
-        
+
         for match in matches:
             match_stats = get_general_match_stats(match)
 
@@ -40,7 +41,7 @@ def get_my_stats(match):
 def write_title_row(csv_file):
     csv_writer = csv.writer(csv_file)
     csv_writer.writerow(['Map', 'Date', 'Duration', 'Friends', 'Score', 'Result',
-                            'Player', 'Ping', 'Kills', 'Assists', 'Deaths', 'MVP', 'HSP', 'Player score'])
+                         'Player', 'Ping', 'Kills', 'Assists', 'Deaths', 'MVP', 'HSP', 'Player score'])
     return csv_writer
 
 
@@ -50,13 +51,109 @@ def build_csv_matches_per_weekday(matches):
     with open('./data/csgo_matches_per_weekday.csv', 'w') as csv_file:
         csv_writer = csv.writer(csv_file)
         csv_writer.writerow(['Weekday', 'Matches'])
-                
+
         for match in matches:
-            day_number = get_day_number(match['Date'])
+            day_number = format_date(match['Date']).weekday()
             weekdays[day_number] += 1
 
         for day_num in range(len(weekdays)):
-            csv_writer.writerow([calendar.day_name[day_num], weekdays[day_num]])
+            csv_writer.writerow(
+                [calendar.day_name[day_num], weekdays[day_num]])
 
-def get_day_number(date):
-    return datetime.strptime(date, '%d/%m %H:%M').replace(year=2020).weekday()
+
+def format_date(date):
+    return datetime.strptime(date, '%d/%m %H:%M').replace(year=2020)
+
+
+def build_csv_net_wins_per_map_timeline(matches):
+    maps = ['Inferno', 'Mirage', 'Cache', 'Dust II']
+
+    with open('./data/csgo_net_wins_per_map_timeline.csv', 'w') as csv_file:
+        csv_writer = csv.writer(csv_file)
+        csv_writer.writerow(['Week'] + maps)
+        net_results_per_date = get_matches_with_function(
+            matches, maps, get_match_net_result)
+        weekly_results = compress_matches_in_weeks(net_results_per_date, maps)
+        [csv_writer.writerow(weekly_result)
+         for weekly_result in weekly_results]
+
+
+def get_matches_with_function(original_matches, maps, f):
+    matches = original_matches.copy()
+    matches.reverse()
+    prev_match = [format_date(matches[0]['Date'])] + ([0] * len(maps))
+    rows = []
+
+    for match in matches[1:]:
+        net_match_result = f(match, prev_match, maps)
+        date = format_date(match['Date'])
+        prev_match = [date] + net_match_result.copy()
+        rows += [prev_match]
+
+    return rows
+
+
+def get_match_net_result(match, prev_match, maps):
+    prev_results = prev_match[1:]
+    result = 1 if match['Result'] == 'won' else - \
+        1 if match['Result'] == 'lost' else 0
+    map_index = maps.index(match['Map'])
+
+    return [prev_results[i] + result if map_index == i else prev_results[i] for i in range(len(maps))]
+
+
+def compress_matches_in_weeks(matches, maps):
+    curr_week = get_week_of(matches[0][0])  # Second 0 is for the date
+    weekly_matches = []
+    week_num = 0
+
+    for match in matches:
+        if not match_is_in_curr_week(match, curr_week):
+            curr_week += timedelta(weeks=1)
+            week_num += 1
+
+        weekly_matches = weekly_matches[:week_num] + [match]
+        weekly_matches[week_num][0] = 'Week ' + str(week_num + 1)
+
+    return weekly_matches
+
+
+def match_is_in_curr_week(match, curr_week_monday):
+    date = match[0]
+    next_week_monday = curr_week_monday + timedelta(weeks=1)
+
+    return date >= curr_week_monday and date < next_week_monday
+
+
+def add_match_results_to_week(weekly_matches, match):
+    weekly_results = np.array(weekly_matches[-1][1:])
+    match_results = np.array(match[1:])
+
+    return (weekly_results + match_results).tolist()
+
+
+def build_csv_matches_per_map_timeline(matches):
+    maps = ['Inferno', 'Mirage', 'Cache', 'Dust II']
+
+    with open('./data/csgo_matches_per_map_timeline.csv', 'w') as csv_file:
+        csv_writer = csv.writer(csv_file)
+        csv_writer.writerow(['Week'] + maps)
+        matches_per_map = get_matches_with_function(matches, maps, get_matches_per_map)
+        weekly_results = compress_matches_in_weeks(matches_per_map, maps)
+        [csv_writer.writerow(weekly_result)
+         for weekly_result in weekly_results]
+
+
+def get_matches_per_map(match, prev_match, maps):
+    match_week = get_week_of(format_date(match['Date']))
+    prev_match_week = get_week_of(prev_match[0])
+    prev_results = prev_match[1:]
+
+    if match_week == prev_match_week:
+        return [prev_results[i] + 1 if maps.index(match['Map']) == i else prev_results[i] for i in range(len(maps))]
+    else:
+        return [1 if maps.index(match['Map']) == i else 0 for i in range(len(maps))]
+
+
+def get_week_of(date):
+    return (date - timedelta(days=date.weekday())).replace(hour=0, minute=0)
