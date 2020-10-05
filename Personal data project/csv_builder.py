@@ -6,18 +6,6 @@ import numpy as np
 from collections import deque
 
 
-def build_csv(matches):
-    with open('./data/csgo_matches.csv', 'w') as csv_file:
-        csv_writer = write_title_row(csv_file)
-
-        for match in matches:
-            match_stats = get_general_match_stats(match)
-
-            for player in match['Team']:
-                player_stats = get_player_stats(match['Team'][player])
-                csv_writer.writerow(match_stats + [player] + player_stats)
-
-
 def build_csv_only_me(matches):
     with open('./data/csgo_matches_only_me.csv', 'w') as csv_file:
         csv_writer = write_title_row(csv_file)
@@ -145,6 +133,18 @@ def build_csv_matches_per_map_timeline(matches):
          for weekly_result in weekly_results]
 
 
+def build_csv_acc_matches_per_map_timeline(matches):
+    maps = ['Inferno', 'Mirage', 'Cache', 'Dust II']
+
+    with open('./data/csgo_acc_matches_per_map_timeline.csv', 'w') as csv_file:
+        csv_writer = csv.writer(csv_file)
+        csv_writer.writerow(['Week'] + maps)
+        matches_per_map = get_matches_with_function(matches, maps, get_acc_matches_per_map)
+        weekly_results = compress_matches_in_weeks(matches_per_map, maps)
+        [csv_writer.writerow(weekly_result)
+         for weekly_result in weekly_results]
+
+
 def get_matches_per_map(match, prev_match, maps):
     match_week = get_week_of(format_date(match['Date']))
     prev_match_week = get_week_of(prev_match[0])
@@ -154,6 +154,14 @@ def get_matches_per_map(match, prev_match, maps):
         return [prev_results[i] + 1 if maps.index(match['Map']) == i else prev_results[i] for i in range(len(maps))]
     else:
         return [1 if maps.index(match['Map']) == i else 0 for i in range(len(maps))]
+
+
+def get_acc_matches_per_map(match, prev_match, maps):
+    match_week = get_week_of(format_date(match['Date']))
+    prev_match_week = get_week_of(prev_match[0])
+    prev_results = prev_match[1:]
+
+    return [prev_results[i] + 1 if maps.index(match['Map']) == i else prev_results[i] for i in range(len(maps))]
 
 
 def get_week_of(date):

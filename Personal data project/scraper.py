@@ -1,12 +1,10 @@
 from datetime import datetime, timedelta
 import json
 from bs4 import BeautifulSoup
-from csv_builder import build_csv, build_csv_only_me
 
 
 def get_score(match, all_stats):
     score = match.find('td', class_='csgo_scoreboard_score').text
-    SCORE_DIVIDER = ' : '
     [x, _, y] = score.partition(SCORE_DIVIDER)
 
     if I_AM in all_stats['Winners']:
@@ -119,35 +117,33 @@ def get_match_stats(match):
     stats['Friends'] = count_friends(all_players_stats)
     stats['Score'] = get_score(match, all_players_stats)
     stats.update(all_players_stats)
+    update_result(stats)
 
     return stats
 
 
+def update_result(match):
+    match['Result'] = 'tied' if match['Score'] == TIE else ('won' if won(match) else 'lost')
+    match['Team'] = get_my_team(match)
+
+    del match['Winners']
+    del match['Losers']
+
+
+def get_my_team(match):
+    return match['Winners'] if I_AM in match['Winners'] else match['Losers']
+
+
+def won(match):
+    [us, _, them] = match['Score'].partition(SCORE_DIVIDER)
+
+    return int(us) > int(them)
+
+
 def i_got_disconnected(match):
-    my = match['Winners'][I_AM] if I_AM in match['Winners'] else match['Losers'][I_AM]
+    my = match['Team'][I_AM]
 
     return my['Kills'] == 0 and my['Assists'] == 0 and my['Deaths'] == 0
-
-
-def my_team_only(original_matches):
-    matches = original_matches.copy()
-
-    for match in matches:
-        if i_got_disconnected(match):
-            del matches[match]
-            continue
-
-        if I_AM in match['Winners']:
-            match['Result'] = 'won'
-            match['Team'] = match['Winners']
-        else:
-            match['Result'] = 'lost' if match['Score'] != '15 : 15' else 'won'
-            match['Team'] = match['Losers']
-
-        del match['Winners']
-        del match['Losers']
-
-    return matches
 
 
 def my_stats_only(original_matches):
@@ -163,10 +159,18 @@ def my_stats_only(original_matches):
 
 
 def get_csgo_stats():
-    return [get_match_stats(match) for match in matches]
+    stats = [get_match_stats(match) for match in matches]
+
+    for match in stats:
+        if i_got_disconnected(match):
+            del stats[match]
+    
+    return stats
 
 
 I_AM = 'Tablon James'
+SCORE_DIVIDER = ' : '
+TIE = '15 : 15'
 FRIENDS = json.load(open('steam_friends.json', 'r'))
 csgo_file = open('./data/csgo_steam_stats.html', 'r')
 soup = BeautifulSoup(csgo_file, 'html.parser')
