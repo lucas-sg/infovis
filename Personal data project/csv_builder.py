@@ -3,6 +3,7 @@ import json
 from datetime import datetime, timedelta
 import calendar
 import numpy as np
+from collections import deque
 
 
 def build_csv(matches):
@@ -157,3 +158,41 @@ def get_matches_per_map(match, prev_match, maps):
 
 def get_week_of(date):
     return (date - timedelta(days=date.weekday())).replace(hour=0, minute=0)
+
+
+def build_csv_matches_per_hour(matches):
+    hours = [0] * 24
+
+    with open('./data/csgo_matches_per_hour.csv', 'w') as csv_file:
+        csv_writer = csv.writer(csv_file)
+        csv_writer.writerow(['Hour', 'Matches'])
+
+        for match in matches:
+            hour_played = get_hour_played(match)
+            hours[hour_played] += 1
+        
+        matches_per_hour = deque([[ind, hourly_matches] for ind, hourly_matches in enumerate(hours)])
+        matches_per_hour.rotate(12)
+        [csv_writer.writerow(match) for match in matches_per_hour]
+
+
+# Returns the hour (int) during which most of the match was played
+def get_hour_played(match):
+    date = format_date(match['Date'])
+    duration = get_duration(datetime.strptime(match['Duration'], '%M:%S'))
+    
+    if (date.hour == (date + duration).hour):
+        return date.hour
+    
+    next_hour = (date + timedelta(hours=1)).replace(minute=0, second=0)
+    t_played_curr_hour = next_hour - date
+    t_played_next_hour = date + duration - next_hour
+    
+    if (t_played_curr_hour > t_played_next_hour):
+        return date.hour
+    else:
+        return next_hour.hour
+    
+
+def get_duration(d8time):
+    return timedelta(minutes=d8time.minute, seconds=d8time.second)
