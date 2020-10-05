@@ -126,10 +126,10 @@ def build_csv_matches_per_map_timeline(matches):
 
     with open('./data/csgo_matches_per_map_timeline.csv', 'w') as csv_file:
         csv_writer = csv.writer(csv_file)
-        csv_writer.writerow(['Week'] + maps)
+        csv_writer.writerow(['Week'] + maps + ['Total'])
         matches_per_map = get_matches_with_function(matches, maps, get_matches_per_map)
         weekly_results = compress_matches_in_weeks(matches_per_map, maps)
-        [csv_writer.writerow(weekly_result)
+        [csv_writer.writerow(weekly_result + [sum(weekly_result[1:])])
          for weekly_result in weekly_results]
 
 
